@@ -1,0 +1,8 @@
+# Ignora tutto
+*
+
+# Ma non ignorare questi file/cartelle specifici
+!LLM_gemini_app.py
+!README.md
+!requirements.txt
+!.gitignore

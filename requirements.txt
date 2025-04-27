@@ -1,0 +1,9 @@
+streamlit
+pandas
+pdf2image
+Pillow
+google-generativeai
+openpyxl
+zipfile36
+io
+datetime
