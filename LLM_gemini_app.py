@@ -188,7 +188,7 @@ def dataframe_to_excel_bytes(dfs_dict: dict[str, pd.DataFrame]) -> bytes | None:
 st.set_page_config(layout="wide")
 st.title("📄 Image To Text")
 st.markdown(f"""
-Carica i file PDF dei fogli presenze (singoli, multipli o un file ZIP contenente PDF).
+Carica i file PDF dei fogli presenze (singoli, multipli).
 L'applicazione analizza ogni pagina ed estrae i dati, generando poi un file Excel.
 
 """)
@@ -199,7 +199,7 @@ uploaded_files = st.file_uploader(
     "Carica PDF o ZIP",
     type=["pdf", "zip"],
     accept_multiple_files=True,
-    help="Puoi trascinare più file PDF, un singolo PDF o un file ZIP contenente PDF."
+    help="Puoi trascinare più file PDF, un singolo PDF."
 )
 
 process_button = st.button("Elabora File Caricati")
