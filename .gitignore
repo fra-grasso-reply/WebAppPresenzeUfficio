@@ -3,6 +3,7 @@
 
 # Ma non ignorare questi file/cartelle specifici
 !LLM_gemini_app.py
+!packages.txt
 !README.md
 !requirements.txt
 !.gitignore
