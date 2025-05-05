@@ -58,17 +58,21 @@ def extract_data_with_gemini(model: genai.GenerativeModel, image: Image.Image) -
 
     # --- Modifica: Rimosso types.Part/Blob. Passa prompt e immagine direttamente ---
     prompt_text = """
-    Sei un assistente esperto nell'estrazione di dati da documenti. Analizza l'immagine fornita, che rappresenta una pagina di un foglio presenze ("condica de prezență").
-    Il tuo obiettivo è estrarre le seguenti informazioni per ogni persona elencata nella tabella:
+    Sei un esperto nell'estrazione di dati da documenti.
+
+    Il tuo obiettivo è analizzare l'immagine fornita, che rappresenta una pagina di un foglio presenze ("condica de prezență") e estrarre le seguenti informazioni per ogni persona elencata nella tabella:
     1.  **Data**: Cerca una data nel formato GG/MM/AAAA nell'intestazione o in altre parti del documento. Se trovi una data, usala per tutti i record estratti da questa immagine. Se non trovi una data specifica nell'immagine, usa il valore "Data Non Trovata".
     2.  **Nome Cognome**: Il nome completo della persona.
     3.  **Ora Arrivo**: L'orario di arrivo (colonna "ORA SOSIRE" o simile), se presente. Formato HH:MM.
     4.  **Ora Partenza**: L'orario di partenza (colonna "ORA PLECARE" o simile), se presente. Formato HH:MM.
 
+    È di fondamentale importanza garantire la massima precisione nell'associare ogni firma alla persona corretta. Ogni firma rappresenta una convalida o una registrazione legata a uno specifico individuo e alle sue attività (come orari di presenza, approvazioni, ecc.).
+    E di vitale importanza gestirti l'immagine al meglio per l'elaborazione, se serve applica:
+    rotazione, 
+    ritaglia l'immagine da spazi bianchi non necessari, concentrandosi solo sul contenuto principale, ovvero la tabella.
+
     Ignora le colonne relative alle firme ("SEMNATURA").
     Gestisci eventuali imprecisioni dovute alla scrittura manuale degli orari al meglio delle tue capacità. Se un orario non è leggibile o assente, lascialo vuoto o null.
-
-    Potresti ricevere immagini ruotate di 90,180 oppure x gradi, in quel caso gestiscile adeguatamente.
 
     Restituisci il risultato ESCLUSIVAMENTE come una lista JSON valida. Ogni elemento della lista deve essere un oggetto JSON con le seguenti chiavi: "Data", "Nome Cognome", "Ora Arrivo", "Ora Partenza".
 
