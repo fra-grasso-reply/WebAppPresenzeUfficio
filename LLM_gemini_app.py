@@ -11,7 +11,7 @@ import json
 from datetime import datetime
 
 # --- Configurazione Gemini ---
-GEMINI_MODEL_NAME = "gemini-2.5-pro-exp-03-25" # Modello sperimentale
+GEMINI_MODEL_NAME = "gemini-2.5-pro-preview-03-25" # Modello sperimentale
 DEBUG = True
 
 # --- Funzioni Helper ---
