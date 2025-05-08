@@ -7,4 +7,5 @@
 !README.md
 !requirements.txt
 !.gitignore
-
+!.streamlit/
+!.streamlit/**
