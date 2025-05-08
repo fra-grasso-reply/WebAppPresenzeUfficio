@@ -11,3 +11,4 @@ imutils
 langchain
 langchain-google-genai
 poppler-utils
+opencv-python-headless
