@@ -11,3 +11,6 @@
 !.streamlit/
 .streamlit/*
 !.streamlit/config.toml
+
+!few_shot_examples/
+!few_shot_examples/**

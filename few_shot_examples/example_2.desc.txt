@@ -1,0 +1,4 @@
+In questo esempio ci sono due cose importanti da notare:
+
+- quando trovi delle firme che si estendono verticalmente su più righe (riga di DRAGAN Emilia-Iuliana, ma anche BALEANU Bogdan-Gabriel), assicurati di non confondere questo con dati validi per la persona nella riga sottostante.
+- Quando vedi informazioni cancellate o barrate (riga di GRASSO Francesco dove l'orario di arrivo è stato barrato), trattale come valori nulli (null).

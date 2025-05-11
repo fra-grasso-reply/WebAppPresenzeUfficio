@@ -15,6 +15,7 @@ from pytesseract import Output
 import imutils
 import numpy as np
 import time
+from typing import List, Tuple, Dict, Any
 
 # --- Configurazione Gemini ---
 GEMINI_MODEL_NAME = "gemini-2.5-pro-preview-03-25" # Modello sperimentale
@@ -180,12 +181,43 @@ def configure_gemini():
         if DEBUG: print(f"[DEBUG] Errore generico durante la configurazione di Gemini: {e}")
         return None
 
+def load_few_shot_examples(examples_folder="few_shot_examples") -> List[Tuple[Image.Image, str, str]]:
+    """
+    Carica immagini di esempio, annotazioni JSON e descrizioni
+    """
+    examples = []
+    
+    # Ordina i file per nome
+    files = sorted(os.listdir(examples_folder))
+    
+    for file in files:
+        if file.endswith(".jpg") or file.endswith(".png"):
+            base_name = os.path.splitext(file)[0]
+            json_file = os.path.join(examples_folder, base_name + ".json")
+            desc_file = os.path.join(examples_folder, base_name + ".desc.txt")
+            img_file = os.path.join(examples_folder, file)
+            
+            if os.path.exists(json_file) and os.path.exists(desc_file):
+                try:
+                    img = Image.open(img_file)
+                    with open(json_file, 'r', encoding='utf-8') as f:
+                        annotation = f.read()
+                    with open(desc_file, 'r', encoding='utf-8') as f:
+                        description = f.read()
+                    examples.append((img, annotation, description))
+                except Exception as e:
+                    if DEBUG: print(f"[DEBUG] Errore nel caricamento dell'esempio {file}: {e}")
+    
+    return examples
+
 # --- Modifica: Accetta 'image' PIL invece di 'image_bytes' ---
 def extract_data_with_gemini(model: genai.GenerativeModel, image: Image.Image) -> list | None:
     """
     Invia un'immagine PIL a Gemini usando genai.GenerativeModel e chiede di estrarre i dati.
     Restituisce una lista di dizionari o None in caso di errore.
     """
+
+    examples = load_few_shot_examples()
 
     prompt_text = """
     Sei un esperto nell'estrazione di dati da documenti, specializzato nell'analisi di fogli presenze con scrittura manuale.
@@ -197,6 +229,8 @@ def extract_data_with_gemini(model: genai.GenerativeModel, image: Image.Image) -
 
     ISTRUZIONI IMPORTANTI PER L'ANALISI DEGLI ORARI:
     - Presta particolare attenzione all'allineamento orizzontale degli orari con i nomi delle persone
+    - Se noti che una firma si estende verticalmente su più righe, assicurati di non confondere questo con dati validi per la persona nella riga sottostante.
+    - Quando vedi informazioni cancellate o barrate, trattale come valori nulli (null).
     - Considera che gli orari possono essere scritti in diversi formati (09:10, 9.10, 9:10, 9.10, 9 10, ecc..)
     - Se un orario è scritto accanto a un altro (es. "18:40 18:00"), considera solo il primo orario
     - Verifica che ogni orario sia associato alla persona corretta nella stessa riga
@@ -208,6 +242,7 @@ def extract_data_with_gemini(model: genai.GenerativeModel, image: Image.Image) -
 
     Ignora le colonne relative alle firme ("SEMNATURA").
     Gestisci eventuali imprecisioni dovute alla scrittura manuale degli orari al meglio delle tue capacità.
+    
     Restituisci il risultato ESCLUSIVAMENTE come una lista JSON valida. Ogni elemento della lista deve essere un oggetto JSON con le seguenti chiavi: "Data", "Nome Cognome", "Ora Arrivo", "Ora Partenza".
 
     Esempio di output JSON atteso:
@@ -234,8 +269,25 @@ def extract_data_with_gemini(model: genai.GenerativeModel, image: Image.Image) -
 
     Se non riesci a estrarre dati o l'immagine non sembra un foglio presenze valido, restituisci una lista JSON vuota: []. Non aggiungere spiegazioni o testo aggiuntivo prima o dopo la lista JSON.
     """
-    # Costruisci i contenuti come lista [prompt_string, immagine_PIL]
-    contents = [prompt_text, image]
+        # Prepara i contenuti per la richiesta
+    if examples:
+        prompt_text += "\n\nEcco alcuni esempi di fogli presenze e le relative estrazioni corrette:\n"
+        contents = [prompt_text]
+        
+        # Aggiungi gli esempi
+        for i, (example_img, example_annotation, example_desc) in enumerate(examples, 1):
+            contents.append(f"\nEsempio {i}:")
+            contents.append(example_img)
+            contents.append(f"Descrizione esempio {i}:\n{example_desc}\n")  # Nuova linea
+            contents.append(f"Estrazione corretta per l'esempio {i}:\n{example_annotation}\n")
+        
+        # Aggiungi l'immagine da analizzare
+        contents.append("\nAnalizza questa immagine seguendo lo stesso formato degli esempi precedenti:")
+        contents.append(image)
+    else:
+        # Se non ci sono esempi, usa il prompt standard
+        contents = [prompt_text, image]
+    if DEBUG: print(f"[DEBUG] prompt: {contents}")
     # --------------------------------------------------------------------
 
     try:
@@ -414,8 +466,6 @@ st.markdown("""
         box-shadow: 0 2px 4px rgba(255, 75, 75, 0.2);
     }
     
-    
-    
     /* Stile della tabella dei risultati */
     .stDataFrame {
         margin-top: 2rem;
@@ -424,20 +474,38 @@ st.markdown("""
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
     }
     
-    /* Stile del bottone di download */
+    /* Stile del bottone di download - modificato per essere come il bottone di conversione */
     div.stDownloadButton > button {
         background-color: #4CAF50;
         color: white;
-        border-radius: 20px;
-        padding: 0.5rem 1rem;
-        font-weight: 500;
-        box-shadow: 0 2px 4px rgba(76, 175, 80, 0.2);
+        padding: 0;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin: 2rem auto;
+        width: 300px;
+        height: 60px;
+        border-radius: 30px;
+        font-weight: 600;
+        box-shadow: 0 4px 6px rgba(76, 175, 80, 0.2);
         transition: all 0.3s ease;
+    }
+    
+    div.stDownloadButton > button p {
+        font-size: 22px !important;
+        margin: 0;
     }
     
     div.stDownloadButton > button:hover {
         background-color: #3d8b40;
-        box-shadow: 0 4px 6px rgba(76, 175, 80, 0.3);
+        color: white !important;
+        box-shadow: 0 6px 8px rgba(76, 175, 80, 0.3);
+        transform: translateY(-2px);
+    }
+    
+    div.stDownloadButton > button:active {
+        transform: translateY(1px);
+        box-shadow: 0 2px 4px rgba(76, 175, 80, 0.2);
     }
 </style>
 """, unsafe_allow_html=True)
@@ -677,13 +745,14 @@ if process_button and uploaded_files:
                             current_time = datetime.now().strftime("%Y%m%d_%H%M%S")
                             # Aggiorna nome file e etichetta per riflettere il contenuto Excel
                             file_name = f"Report_Presenze_{current_time}.xlsx"
-                            download_placeholder.download_button(
-                                # Etichetta suggerita per chiarezza
-                                label="📥 Scarica Report Excel (Dati + Riepilogo)",
-                                data=excel_bytes,
-                                file_name=file_name,
-                                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                            )
+                            col1, col2, col3 = st.columns([1, 2, 1])
+                            with col2:
+                                download_placeholder.download_button(
+                                    label="Download Excel",
+                                    data=excel_bytes,
+                                    file_name=file_name,
+                                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                                )
                             if DEBUG: print(f"[DEBUG] Pulsante download generato per {file_name}.")
                         else:
                             download_placeholder.empty()
@@ -710,8 +779,8 @@ with st.expander("ℹ️ Come funziona questa app"):
     
     1. **Caricamento**: Carica i tuoi file PDF o ZIP contenenti PDF
     2. **Analisi**: L'app converte ogni pagina in un'immagine e la analizza
-    3. **Estrazione**: Il modello AI Gemini estrae i dati dalle tabelle di presenze
-    4. **Risultati**: I dati estratti vengono mostrati e resi disponibili per il download
+    3. **Estrazione**: Vengono estratti i dati dalle tabelle di presenza in suppporto dell'Intelligenza artificiale
+    4. **Risultati**: I dati estratti vengono mostrati e resi disponibili per il download, in aggiunta di un riepilogo delle presenze
     
     ### Suggerimenti per risultati ottimali
     
