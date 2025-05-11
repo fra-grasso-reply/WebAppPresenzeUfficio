@@ -6,9 +6,8 @@ google-generativeai
 openpyxl
 zipfile36
 pytesseract
-opencv-python
 imutils
 langchain
 langchain-google-genai
 poppler-utils
-opencv-python-headless
+opencv-python-headless==4.5.5.64
