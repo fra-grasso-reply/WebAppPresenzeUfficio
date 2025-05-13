@@ -714,18 +714,27 @@ if process_button and uploaded_files:
                         # --- INIZIO BLOCCO CALCOLO RIEPILOGO (SENZA VISUALIZZAZIONE STREAMLIT) ---
                         dfs_for_excel = {'Dati Estratti': df} # Inizializza con il df principale
 
-                        if 'Nome Cognome' in df.columns and not df.empty:
+                        if 'Nome Cognome' in df.columns and 'Data' in df.columns and not df.empty:
                             if DEBUG: print("[DEBUG] Calcolo riepilogo presenze per persona (per Excel)...")
                             try:
-                                # Conta le occorrenze per ogni 'Nome Cognome'
-                                frequency_summary = df['Nome Cognome'].value_counts().reset_index()
-                                # Rinomina le colonne per chiarezza
-                                frequency_summary.columns = ['Nome Cognome', 'Totale Presenze Registrate']
-                                # Ordina per nome (opzionale)
-                                frequency_summary = frequency_summary.sort_values(by='Nome Cognome').reset_index(drop=True)
+                                # Creiamo una maschera per filtrare solo le righe in cui la persona è presente
+                                # (ha un'ora di arrivo o un'ora di partenza registrata)
+                                is_present = ~(pd.isna(df['Ora Arrivo']) & pd.isna(df['Ora Partenza']))
+                                
+                                # Filtriamo il DataFrame per mantenere solo le righe con presenza
+                                presence_df = df[is_present]
+                                
+                                # Raggruppiamo per Nome Cognome e contiamo le date uniche per ogni persona
+                                presence_by_person = presence_df.groupby('Nome Cognome')['Data'].nunique().reset_index()
+                                
+                                # Rinomina la colonna per chiarezza
+                                presence_by_person.columns = ['Nome Cognome', 'Totale Presenze Registrate']
+                                
+                                # Ordiniamo per nome
+                                presence_by_person = presence_by_person.sort_values(by='Nome Cognome').reset_index(drop=True)
 
                                 # Aggiungi il riepilogo al dizionario per Excel
-                                dfs_for_excel['Riepilogo Presenze'] = frequency_summary
+                                dfs_for_excel['Riepilogo Presenze'] = presence_by_person
                                 if DEBUG: print("[DEBUG] Riepilogo presenze calcolato e aggiunto per Excel.")
 
                             except Exception as freq_error:
@@ -734,8 +743,9 @@ if process_button and uploaded_files:
                                 if DEBUG: print(f"[DEBUG] Errore calcolo riepilogo per Excel: {freq_error}")
                                 # dfs_for_excel conterrà solo 'Dati Estratti' in questo caso
                         else:
-                            if DEBUG: print("[DEBUG] Colonna 'Nome Cognome' non trovata o DataFrame vuoto, riepilogo per Excel saltato.")
+                            if DEBUG: print("[DEBUG] Colonna 'Nome Cognome' o 'Data' non trovata o DataFrame vuoto, riepilogo per Excel saltato.")
                         # --- FINE BLOCCO CALCOLO RIEPILOGO ---
+
 
                         if DEBUG: print("[DEBUG] Generazione file Excel multi-foglio...")
                         # Chiama la funzione aggiornata con il dizionario
